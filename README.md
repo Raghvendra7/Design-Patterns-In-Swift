@@ -1,17 +1,19 @@
 
-Design Patterns implemented in Swift 2.2
+
+Design Patterns implemented in Swift 5.0
 ========================================
-A short cheat-sheet with Xcode 7.3 Playground ([Design-Patterns.playground.zip](https://raw.githubusercontent.com/ochococo/Design-Patterns-In-Swift/master/Design-Patterns.playground.zip)).
+
+A short cheat-sheet with Xcode 10.2 Playground ([Design-Patterns.playground.zip](https://raw.githubusercontent.com/ochococo/Design-Patterns-In-Swift/master/Design-Patterns.playground.zip)).
 
 👷 Project maintained by: [@nsmeme](http://twitter.com/nsmeme) (Oktawian Chojnacki)
 
-⚠️ See my newest project: [OOD-Principles-In-Swift](https://github.com/ochococo/OOD-Principles-In-Swift)
+🚀 How to generate README, Playground and zip from source: [GENERATE.md](https://github.com/ochococo/Design-Patterns-In-Swift/blob/master/GENERATE.md)
 
-## Table of Contents
 
-* [Behavioral](#behavioral)
-* [Creational](#creational)
-* [Structural](#structural)
+```swift
+print("Welcome!")
+```
+
 
 Behavioral
 ==========
@@ -20,11 +22,8 @@ Behavioral
 >
 >**Source:** [wikipedia.org](http://en.wikipedia.org/wiki/Behavioral_pattern)
 
-```swift
 
-import Swift
-import Foundation
-```
+
 
 🐝 Chain Of Responsibility
 --------------------------
@@ -35,70 +34,78 @@ The chain of responsibility pattern is used to process varied requests, each of 
 
 ```swift
 
-class MoneyPile {
+protocol Withdrawing {
+    func withdraw(amount: Int) -> Bool
+}
+
+final class MoneyPile: Withdrawing {
+
     let value: Int
     var quantity: Int
-    var nextPile: MoneyPile?
-    
-    init(value: Int, quantity: Int, nextPile: MoneyPile?) {
+    var next: Withdrawing?
+
+    init(value: Int, quantity: Int, next: Withdrawing?) {
         self.value = value
         self.quantity = quantity
-        self.nextPile = nextPile
+        self.next = next
     }
-    
-    func canWithdraw(v: Int) -> Bool {
 
-        var v = v
+    func withdraw(amount: Int) -> Bool {
+
+        var amount = amount
 
         func canTakeSomeBill(want: Int) -> Bool {
             return (want / self.value) > 0
         }
-        
-        var q = self.quantity
 
-        while canTakeSomeBill(v) {
+        var quantity = self.quantity
 
-            if q == 0 {
+        while canTakeSomeBill(want: amount) {
+
+            if quantity == 0 {
                 break
             }
 
-            v -= self.value
-            q -= 1
+            amount -= self.value
+            quantity -= 1
         }
 
-        if v == 0 {
+        guard amount > 0 else {
             return true
-        } else if let next = self.nextPile {
-            return next.canWithdraw(v)
+        }
+
+        if let next = self.next {
+            return next.withdraw(amount: amount)
         }
 
         return false
     }
 }
 
-class ATM {
-    private var hundred: MoneyPile
-    private var fifty: MoneyPile
-    private var twenty: MoneyPile
-    private var ten: MoneyPile
-    
-    private var startPile: MoneyPile {
+final class ATM: Withdrawing {
+
+    private var hundred: Withdrawing
+    private var fifty: Withdrawing
+    private var twenty: Withdrawing
+    private var ten: Withdrawing
+
+    private var startPile: Withdrawing {
         return self.hundred
     }
-    
-    init(hundred: MoneyPile, 
-           fifty: MoneyPile, 
-          twenty: MoneyPile, 
-             ten: MoneyPile) {
+
+    init(hundred: Withdrawing,
+           fifty: Withdrawing,
+          twenty: Withdrawing,
+             ten: Withdrawing) {
 
         self.hundred = hundred
         self.fifty = fifty
         self.twenty = twenty
         self.ten = ten
     }
-    
-    func canWithdraw(value: Int) -> String {
-        return "Can withdraw: \(self.startPile.canWithdraw(value))"
+
+    func withdraw(amount: Int) -> Bool {
+        return startPile.withdraw(amount: amount)
     }
 }
 ```
@@ -106,23 +113,17 @@ class ATM {
 ### Usage
 
 ```swift
-
 // Create piles of money and link them together 10 < 20 < 50 < 100.**
-let ten = MoneyPile(value: 10, quantity: 6, nextPile: nil)
-let twenty = MoneyPile(value: 20, quantity: 2, nextPile: ten)
-let fifty = MoneyPile(value: 50, quantity: 2, nextPile: twenty)
-let hundred = MoneyPile(value: 100, quantity: 1, nextPile: fifty)
+let ten = MoneyPile(value: 10, quantity: 6, next: nil)
+let twenty = MoneyPile(value: 20, quantity: 2, next: ten)
+let fifty = MoneyPile(value: 50, quantity: 2, next: twenty)
+let hundred = MoneyPile(value: 100, quantity: 1, next: fifty)
 
 // Build ATM.
 var atm = ATM(hundred: hundred, fifty: fifty, twenty: twenty, ten: ten)
-atm.canWithdraw(310) // Cannot because ATM has only 300
-atm.canWithdraw(100) // Can withdraw - 1x100
-atm.canWithdraw(165) // Cannot withdraw because ATM doesn't has bill with value of 5
-atm.canWithdraw(30)  // Can withdraw - 1x20, 2x10
+atm.withdraw(amount: 310) // Cannot because ATM has only 300
+atm.withdraw(amount: 100) // Can withdraw - 1x100
 ```
-
->**Further Examples:** [Design Patterns in Swift](https://github.com/kingreza/Swift-Chain-Of-Responsibility)
-
 
 👫 Command
 ----------
@@ -132,12 +133,11 @@ The command pattern is used to express a request, including the call to be made 
 ### Example:
 
 ```swift
-
 protocol DoorCommand {
     func execute() -> String
 }
 
-class OpenCommand : DoorCommand {
+final class OpenCommand: DoorCommand {
     let doors:String
 
     required init(doors: String) {
@@ -149,7 +149,7 @@ class OpenCommand : DoorCommand {
     }
 }
 
-class CloseCommand : DoorCommand {
+final class CloseCommand: DoorCommand {
     let doors:String
 
     required init(doors: String) {
@@ -161,7 +161,7 @@ class CloseCommand : DoorCommand {
     }
 }
 
-class HAL9000DoorsOperations {
+final class HAL9000DoorsOperations {
     let openCommand: DoorCommand
     let closeCommand: DoorCommand
     
@@ -183,7 +183,6 @@ class HAL9000DoorsOperations {
 ### Usage:
 
 ```swift
-
 let podBayDoors = "Pod Bay Doors"
 let doorModule = HAL9000DoorsOperations(doors:podBayDoors)
 
@@ -200,69 +199,68 @@ The interpreter pattern is used to evaluate sentences in a language.
 
 ```swift
 
-
-protocol IntegerExp {
-    func evaluate(context: IntegerContext) -> Int
-    func replace(character: Character, integerExp: IntegerExp) -> IntegerExp
-    func copy() -> IntegerExp
+protocol IntegerExpression {
+    func evaluate(_ context: IntegerContext) -> Int
+    func replace(character: Character, integerExpression: IntegerExpression) -> IntegerExpression
+    func copied() -> IntegerExpression
 }
 
-class IntegerContext {
+final class IntegerContext {
     private var data: [Character:Int] = [:]
-    
+
     func lookup(name: Character) -> Int {
         return self.data[name]!
     }
-    
-    func assign(integerVarExp: IntegerVarExp, value: Int) {
-        self.data[integerVarExp.name] = value
+
+    func assign(expression: IntegerVariableExpression, value: Int) {
+        self.data[expression.name] = value
     }
 }
 
-class IntegerVarExp: IntegerExp {
+final class IntegerVariableExpression: IntegerExpression {
     let name: Character
-    
+
     init(name: Character) {
         self.name = name
     }
-    
-    func evaluate(context: IntegerContext) -> Int {
-        return context.lookup(self.name)
+
+    func evaluate(_ context: IntegerContext) -> Int {
+        return context.lookup(name: self.name)
     }
-    
-    func replace(name: Character, integerExp: IntegerExp) -> IntegerExp {
+
+    func replace(character name: Character, integerExpression: IntegerExpression) -> IntegerExpression {
         if name == self.name {
-            return integerExp.copy()
+            return integerExpression.copied()
         } else {
-            return IntegerVarExp(name: self.name)
+            return IntegerVariableExpression(name: self.name)
         }
     }
-    
-    func copy() -> IntegerExp {
-        return IntegerVarExp(name: self.name)
+
+    func copied() -> IntegerExpression {
+        return IntegerVariableExpression(name: self.name)
     }
 }
 
-class AddExp: IntegerExp {
-    private var operand1: IntegerExp
-    private var operand2: IntegerExp
-    
-    init(op1: IntegerExp, op2: IntegerExp) {
+final class AddExpression: IntegerExpression {
+    private var operand1: IntegerExpression
+    private var operand2: IntegerExpression
+
+    init(op1: IntegerExpression, op2: IntegerExpression) {
         self.operand1 = op1
         self.operand2 = op2
     }
-    
-    func evaluate(context: IntegerContext) -> Int {
+
+    func evaluate(_ context: IntegerContext) -> Int {
         return self.operand1.evaluate(context) + self.operand2.evaluate(context)
     }
-    
-    func replace(character: Character, integerExp: IntegerExp) -> IntegerExp {
-        return AddExp(op1: operand1.replace(character, integerExp: integerExp),
-            op2: operand2.replace(character, integerExp: integerExp))
+
+    func replace(character: Character, integerExpression: IntegerExpression) -> IntegerExpression {
+        return AddExpression(op1: operand1.replace(character: character, integerExpression: integerExpression),
+                             op2: operand2.replace(character: character, integerExpression: integerExpression))
     }
-    
-    func copy() -> IntegerExp {
-        return AddExp(op1: self.operand1, op2: self.operand2)
+
+    func copied() -> IntegerExpression {
+        return AddExpression(op1: self.operand1, op2: self.operand2)
     }
 }
 ```
@@ -270,25 +268,20 @@ class AddExp: IntegerExp {
 ### Usage
 
 ```swift
+var context = IntegerContext()
 
-var expression: IntegerExp?
-var intContext = IntegerContext()
+var a = IntegerVariableExpression(name: "A")
+var b = IntegerVariableExpression(name: "B")
+var c = IntegerVariableExpression(name: "C")
 
-var a = IntegerVarExp(name: "A")
-var b = IntegerVarExp(name: "B")
-var c = IntegerVarExp(name: "C")
+var expression = AddExpression(op1: a, op2: AddExpression(op1: b, op2: c)) // a + (b + c)
 
-expression = AddExp(op1: a, op2: AddExp(op1: b, op2: c)) // a + (b + c)
+context.assign(expression: a, value: 2)
+context.assign(expression: b, value: 1)
+context.assign(expression: c, value: 3)
 
-intContext.assign(a, value: 2)
-intContext.assign(b, value: 1)
-intContext.assign(c, value: 3)
-
-var result = expression?.evaluate(intContext)
+var result = expression.evaluate(context)
 ```
-
->**Further Examples:** [Design Patterns in Swift](https://github.com/kingreza/Swift-Interpreter)
-
 
 🍫 Iterator
 -----------
@@ -298,17 +291,32 @@ The iterator pattern is used to provide a standard interface for traversing a co
 ### Example:
 
 ```swift
-
-struct NovellasCollection<T> {
-    let novellas: [T]
+struct Novella {
+    let name: String
 }
 
-extension NovellasCollection: SequenceType {
-    typealias Generator = AnyGenerator<T>
-    
-    func generate() -> AnyGenerator<T> {
-        var i = 0
-        return AnyGenerator { i += 1; return i >= self.novellas.count ? nil : self.novellas[i] }
+struct Novellas {
+    let novellas: [Novella]
+}
+
+struct NovellasIterator: IteratorProtocol {
+
+    private var current = 0
+    private let novellas: [Novella]
+
+    init(novellas: [Novella]) {
+        self.novellas = novellas
+    }
+
+    mutating func next() -> Novella? {
+        defer { current += 1 }
+        return novellas.count > current ? novellas[current] : nil
+    }
+}
+
+extension Novellas: Sequence {
+    func makeIterator() -> NovellasIterator {
+        return NovellasIterator(novellas: novellas)
     }
 }
 ```
@@ -316,8 +324,7 @@ extension NovellasCollection: SequenceType {
 ### Usage
 
 ```swift
-
-let greatNovellas = NovellasCollection(novellas:["Mist"])
+let greatNovellas = Novellas(novellas: [Novella(name: "The Mist")] )
 
 for novella in greatNovellas {
     print("I've read: \(novella)")
@@ -332,49 +339,43 @@ The mediator pattern is used to reduce coupling between classes that communicate
 ### Example
 
 ```swift
+protocol Receiver {
+    associatedtype MessageType
+    func receive(message: MessageType)
+}
 
+protocol Sender {
+    associatedtype MessageType
+    associatedtype ReceiverType: Receiver
+    
+    var recipients: [ReceiverType] { get }
+    
+    func send(message: MessageType)
+}
 
-class Colleague {
+struct Programmer: Receiver {
     let name: String
-    let mediator: Mediator
     
-    init(name: String, mediator: Mediator) {
+    init(name: String) {
         self.name = name
-        self.mediator = mediator
-    }
-    
-    func send(message: String) {
-        mediator.send(message, colleague: self)
     }
     
     func receive(message: String) {
-        assert(false, "Method should be overriden")
+        print("\(name) received: \(message)")
     }
 }
 
-protocol Mediator {
-    func send(message: String, colleague: Colleague)
-}
-
-class MessageMediator: Mediator {
-    private var colleagues: [Colleague] = []
+final class MessageMediator: Sender {
+    internal var recipients: [Programmer] = []
     
-    func addColleague(colleague: Colleague) {
-        colleagues.append(colleague)
+    func add(recipient: Programmer) {
+        recipients.append(recipient)
     }
     
-    func send(message: String, colleague: Colleague) {
-        for c in colleagues {
-            if c !== colleague { //for simplicity we compare object references
-                c.receive(message)
-            }
+    func send(message: String) {
+        for recipient in recipients {
+            recipient.receive(message: message)
         }
-    }
-}
-
-class ConcreteColleague: Colleague {
-    override func receive(message: String) {
-        print("Colleague \(name) received: \(message)")
     }
 }
 
@@ -383,19 +384,20 @@ class ConcreteColleague: Colleague {
 ### Usage
 
 ```swift
-
+func spamMonster(message: String, worker: MessageMediator) {
+    worker.send(message: message)
+}
 
 let messagesMediator = MessageMediator()
-let user0 = ConcreteColleague(name: "0", mediator: messagesMediator)
-let user1 = ConcreteColleague(name: "1", mediator: messagesMediator)
-messagesMediator.addColleague(user0)
-messagesMediator.addColleague(user1)
 
-user0.send("Hello") // user1 receives message
+let user0 = Programmer(name: "Linus Torvalds")
+let user1 = Programmer(name: "Avadis 'Avie' Tevanian")
+messagesMediator.add(recipient: user0)
+messagesMediator.add(recipient: user1)
+
+spamMonster(message: "I'd Like to Add you to My Professional Network", worker: messagesMediator)
+
 ```
-
->**Further Examples:** [Design Patterns in Swift](https://github.com/kingreza/Swift-Mediator)
-
 
 💾 Memento
 ----------
@@ -405,29 +407,44 @@ The memento pattern is used to capture the current state of an object and store 
 ### Example
 
 ```swift
-
-typealias Memento = Dictionary<NSObject, AnyObject>
-
-let DPMementoKeyChapter = "com.valve.halflife.chapter"
-let DPMementoKeyWeapon = "com.valve.halflife.weapon"
-let DPMementoGameState = "com.valve.halflife.state"
+typealias Memento = [String: String]
 ```
 
 Originator
 
 ```swift
+protocol MementoConvertible {
+    var memento: Memento { get }
+    init?(memento: Memento)
+}
 
-class GameState {
-    var chapter: String = ""
-    var weapon: String = ""
+struct GameState: MementoConvertible {
 
-    func toMemento() -> Memento {
-        return [ DPMementoKeyChapter:chapter, DPMementoKeyWeapon:weapon ]
+    private enum Keys {
+        static let chapter = "com.valve.halflife.chapter"
+        static let weapon = "com.valve.halflife.weapon"
     }
 
-    func restoreFromMemento(memento: Memento) {
-        chapter = memento[DPMementoKeyChapter] as? String ?? "n/a"
-        weapon = memento[DPMementoKeyWeapon] as? String ?? "n/a"
+    var chapter: String
+    var weapon: String
+
+    init(chapter: String, weapon: String) {
+        self.chapter = chapter
+        self.weapon = weapon
+    }
+
+    init?(memento: Memento) {
+        guard let mementoChapter = memento[Keys.chapter],
+              let mementoWeapon = memento[Keys.weapon] else {
+            return nil
+        }
+
+        chapter = mementoChapter
+        weapon = mementoWeapon
+    }
+
+    var memento: Memento {
+        return [ Keys.chapter: chapter, Keys.weapon: weapon ]
     }
 }
 ```
@@ -435,86 +452,82 @@ class GameState {
 Caretaker
 
 ```swift
-
 enum CheckPoint {
-    static func saveState(memento: Memento, keyName: String = DPMementoGameState) {
-        let defaults = NSUserDefaults.standardUserDefaults()
-        defaults.setObject(memento, forKey: keyName)
+
+    private static let defaults = UserDefaults.standard
+
+    static func save(_ state: MementoConvertible, saveName: String) {
+        defaults.set(state.memento, forKey: saveName)
         defaults.synchronize()
     }
 
-    static func restorePreviousState(keyName keyName: String = DPMementoGameState) -> Memento {
-        let defaults = NSUserDefaults.standardUserDefaults()
-
-        return defaults.objectForKey(keyName) as? Memento ?? Memento()
+    static func restore(saveName: String) -> Any? {
+        return defaults.object(forKey: saveName)
     }
 }
 ```
 
- ### Usage
+### Usage
 
 ```swift
-
-var gameState = GameState()
-gameState.restoreFromMemento(CheckPoint.restorePreviousState())
-
-gameState.chapter = "Black Mesa Inbound"
-gameState.weapon = "Crowbar"
-CheckPoint.saveState(gameState.toMemento())
+var gameState = GameState(chapter: "Black Mesa Inbound", weapon: "Crowbar")
 
 gameState.chapter = "Anomalous Materials"
 gameState.weapon = "Glock 17"
-gameState.restoreFromMemento(CheckPoint.restorePreviousState())
+CheckPoint.save(gameState, saveName: "gameState1")
 
 gameState.chapter = "Unforeseen Consequences"
 gameState.weapon = "MP5"
-CheckPoint.saveState(gameState.toMemento(), keyName: "gameState2")
+CheckPoint.save(gameState, saveName: "gameState2")
 
 gameState.chapter = "Office Complex"
 gameState.weapon = "Crossbow"
-CheckPoint.saveState(gameState.toMemento())
+CheckPoint.save(gameState, saveName: "gameState3")
 
-gameState.restoreFromMemento(CheckPoint.restorePreviousState(keyName: "gameState2"))
-
+if let memento = CheckPoint.restore(saveName: "gameState1") as? Memento {
+    let finalState = GameState(memento: memento)
+    dump(finalState)
+}
 ```
 
 👓 Observer
 -----------
 
-The observer pattern is used to allow an object to publish changes to its state. 
+The observer pattern is used to allow an object to publish changes to its state.
 Other objects subscribe to be immediately notified of any changes.
 
 ### Example
 
 ```swift
-
 protocol PropertyObserver : class {
-    func willChangePropertyName(propertyName:String, newPropertyValue:AnyObject?)
-    func didChangePropertyName(propertyName:String, oldPropertyValue:AnyObject?)
+    func willChange(propertyName: String, newPropertyValue: Any?)
+    func didChange(propertyName: String, oldPropertyValue: Any?)
 }
 
-class TestChambers {
+final class TestChambers {
 
     weak var observer:PropertyObserver?
 
+    private let testChamberNumberName = "testChamberNumber"
+
     var testChamberNumber: Int = 0 {
         willSet(newValue) {
-            observer?.willChangePropertyName("testChamberNumber", newPropertyValue:newValue)
+            observer?.willChange(propertyName: testChamberNumberName, newPropertyValue: newValue)
         }
         didSet {
-            observer?.didChangePropertyName("testChamberNumber", oldPropertyValue:oldValue)
+            observer?.didChange(propertyName: testChamberNumberName, oldPropertyValue: oldValue)
         }
     }
 }
 
-class Observer : PropertyObserver {
-    func willChangePropertyName(propertyName: String, newPropertyValue: AnyObject?) {
+final class Observer : PropertyObserver {
+    func willChange(propertyName: String, newPropertyValue: Any?) {
         if newPropertyValue as? Int == 1 {
             print("Okay. Look. We both said a lot of things that you're going to regret.")
         }
     }
 
-    func didChangePropertyName(propertyName: String, oldPropertyValue: AnyObject?) {
+    func didChange(propertyName: String, oldPropertyValue: Any?) {
         if oldPropertyValue as? Int == 0 {
             print("Sorry about the mess. I've really let the place go since you killed me.")
         }
@@ -525,45 +538,39 @@ class Observer : PropertyObserver {
 ### Usage
 
 ```swift
-
 var observerInstance = Observer()
 var testChambers = TestChambers()
 testChambers.observer = observerInstance
-testChambers.testChamberNumber++
+testChambers.testChamberNumber += 1
 ```
-
->**Further Examples:** [Design Patterns in Swift](https://github.com/kingreza/Swift-Observer)
-
 
 🐉 State
 ---------
 
-The state pattern is used to alter the behaviour of an object as its internal state changes. 
+The state pattern is used to alter the behaviour of an object as its internal state changes.
 The pattern allows the class for an object to apparently change at run-time.
 
 ### Example
 
 ```swift
-
-class Context {
+final class Context {
 	private var state: State = UnauthorizedState()
 
     var isAuthorized: Bool {
-        get { return state.isAuthorized(self) }
+        get { return state.isAuthorized(context: self) }
     }
 
     var userId: String? {
-        get { return state.userId(self) }
+        get { return state.userId(context: self) }
     }
 
-	func changeStateToAuthorized(userId userId: String) {
+	func changeStateToAuthorized(userId: String) {
 		state = AuthorizedState(userId: userId)
 	}
 
 	func changeStateToUnauthorized() {
 		state = UnauthorizedState()
 	}
-    
 }
 
 protocol State {
@@ -591,16 +598,13 @@ class AuthorizedState: State {
 ### Usage
 
 ```swift
-
-let context = Context()
-(context.isAuthorized, context.userId)
-context.changeStateToAuthorized(userId: "admin")
-(context.isAuthorized, context.userId) // now logged in as "admin"
-context.changeStateToUnauthorized()
-(context.isAuthorized, context.userId)
+let userContext = Context()
+(userContext.isAuthorized, userContext.userId)
+userContext.changeStateToAuthorized(userId: "admin")
+(userContext.isAuthorized, userContext.userId) // now logged in as "admin"
+userContext.changeStateToUnauthorized()
+(userContext.isAuthorized, userContext.userId)
 ```
-
->**Further Examples:** [Design Patterns in Swift](https://github.com/kingreza/Swift-State)
 
 💡 Strategy
 -----------
@@ -611,49 +615,58 @@ The strategy pattern is used to create an interchangeable family of algorithms f
 
 ```swift
 
-protocol PrintStrategy {
-    func printString(string: String) -> String
+struct TestSubject {
+    let pupilDiameter: Double
+    let blushResponse: Double
+    let isOrganic: Bool
 }
 
-class Printer {
-
-    let strategy: PrintStrategy
-    
-    func printString(string: String) -> String {
-        return self.strategy.printString(string)
-    }
-    
-    init(strategy: PrintStrategy) {
-        self.strategy = strategy
-    }
+protocol RealnessTesting: AnyObject {
+    func testRealness(_ testSubject: TestSubject) -> Bool
 }
 
-class UpperCaseStrategy : PrintStrategy {
-    func printString(string:String) -> String {
-        return string.uppercaseString
+final class VoightKampffTest: RealnessTesting {
+    func testRealness(_ testSubject: TestSubject) -> Bool {
+        return testSubject.pupilDiameter < 30.0 || testSubject.blushResponse == 0.0
     }
 }
 
-class LowerCaseStrategy : PrintStrategy {
-    func printString(string:String) -> String {
-        return string.lowercaseString
+final class GeneticTest: RealnessTesting {
+    func testRealness(_ testSubject: TestSubject) -> Bool {
+        return testSubject.isOrganic
     }
 }
+
+final class BladeRunner {
+    private let strategy: RealnessTesting
+
+    init(test: RealnessTesting) {
+        self.strategy = test
+    }
+
+    func testIfAndroid(_ testSubject: TestSubject) -> Bool {
+        return !strategy.testRealness(testSubject)
+    }
+}
+
 ```
 
-### Usage
-
+ ### Usage
+ 
 ```swift
 
-var lower = Printer(strategy:LowerCaseStrategy())
-lower.printString("O tempora, o mores!")
+let rachel = TestSubject(pupilDiameter: 30.2,
+                         blushResponse: 0.3,
+                         isOrganic: false)
 
-var upper = Printer(strategy:UpperCaseStrategy())
-upper.printString("O tempora, o mores!")
+// Deckard is using a traditional test
+let deckard = BladeRunner(test: VoightKampffTest())
+let isRachelAndroid = deckard.testIfAndroid(rachel)
+
+// Gaff is using a very precise method
+let gaff = BladeRunner(test: GeneticTest())
+let isDeckardAndroid = gaff.testIfAndroid(rachel)
 ```
-
->**Further Examples:** [Design Patterns in Swift](https://github.com/kingreza/Swift-Strategy)
-
 
 🏃 Visitor
 ----------
@@ -663,52 +676,58 @@ The visitor pattern is used to separate a relatively complex set of structured d
 ### Example
 
 ```swift
-
 protocol PlanetVisitor {
 	func visit(planet: PlanetAlderaan)
 	func visit(planet: PlanetCoruscant)
 	func visit(planet: PlanetTatooine)
+    func visit(planet: MoonJedha)
 }
 
 protocol Planet {
 	func accept(visitor: PlanetVisitor)
 }
 
-class PlanetAlderaan: Planet {
-	func accept(visitor: PlanetVisitor) { visitor.visit(self) }
-}
-class PlanetCoruscant: Planet {
-	func accept(visitor: PlanetVisitor) { visitor.visit(self) }
-}
-class PlanetTatooine: Planet {
-	func accept(visitor: PlanetVisitor) { visitor.visit(self) }
+final class MoonJedha: Planet {
+    func accept(visitor: PlanetVisitor) { visitor.visit(planet: self) }
 }
 
-class NameVisitor: PlanetVisitor {
+final class PlanetAlderaan: Planet {
+    func accept(visitor: PlanetVisitor) { visitor.visit(planet: self) }
+}
+
+final class PlanetCoruscant: Planet {
+	func accept(visitor: PlanetVisitor) { visitor.visit(planet: self) }
+}
+
+final class PlanetTatooine: Planet {
+	func accept(visitor: PlanetVisitor) { visitor.visit(planet: self) }
+}
+
+final class NameVisitor: PlanetVisitor {
 	var name = ""
 
 	func visit(planet: PlanetAlderaan)  { name = "Alderaan" }
 	func visit(planet: PlanetCoruscant) { name = "Coruscant" }
 	func visit(planet: PlanetTatooine)  { name = "Tatooine" }
+    func visit(planet: MoonJedha)     	{ name = "Jedha" }
 }
+
 ```
 
 ### Usage
 
 ```swift
-
-let planets: [Planet] = [PlanetAlderaan(), PlanetCoruscant(), PlanetTatooine()]
+let planets: [Planet] = [PlanetAlderaan(), PlanetCoruscant(), PlanetTatooine(), MoonJedha()]
 
 let names = planets.map { (planet: Planet) -> String in
 	let visitor = NameVisitor()
-	planet.accept(visitor)
-	return visitor.name
+    planet.accept(visitor: visitor)
+
+    return visitor.name
 }
 
 names
 ```
-
->**Further Examples:** [Design Patterns in Swift](https://github.com/kingreza/Swift-Visitor)
 
 
 Creational
@@ -718,11 +737,8 @@ Creational
 >
 >**Source:** [wikipedia.org](http://en.wikipedia.org/wiki/Creational_pattern)
 
-```swift
 
-import Swift
-import Foundation
-```
+
 
 🌰 Abstract Factory
 -------------------
@@ -732,59 +748,53 @@ The "family" of objects created by the factory are determined at run-time.
 
 ### Example
 
- 
 Protocols
 
 ```swift
 
-protocol Decimal {
-    func stringValue() -> String
-    // factory
-    static func make(string : String) -> Decimal
+protocol BurgerDescribing {
+    var ingredients: [String] { get }
 }
 
-typealias NumberFactory = (String) -> Decimal
+struct CheeseBurger: BurgerDescribing {
+    let ingredients: [String]
+}
+
+protocol BurgerMaking {
+    func make() -> BurgerDescribing
+}
 
 // Number implementations with factory methods
 
-struct NextStepNumber : Decimal {
-    private var nextStepNumber : NSNumber
-
-    func stringValue() -> String { return nextStepNumber.stringValue }
-    
-    // factory
-    static func make(string : String) -> Decimal {
-        return NextStepNumber(nextStepNumber:NSNumber(longLong:(string as NSString).longLongValue))
+final class BigKahunaBurger: BurgerMaking {
+    func make() -> BurgerDescribing {
+        return CheeseBurger(ingredients: ["Cheese", "Burger", "Lettuce", "Tomato"])
     }
 }
 
-struct SwiftNumber : Decimal {
-    private var swiftInt : Int
-
-    func stringValue() -> String { return "\(swiftInt)" }
-    
-    // factory
-    static func make(string : String) -> Decimal {
-        return SwiftNumber(swiftInt:(string as NSString).integerValue)
+final class JackInTheBox: BurgerMaking {
+    func make() -> BurgerDescribing {
+        return CheeseBurger(ingredients: ["Cheese", "Burger", "Tomato", "Onions"])
     }
 }
+
 ```
 
 Abstract factory
 
 ```swift
 
-enum NumberType {
-    case NextStep, Swift
-}
+enum BurgerFactoryType: BurgerMaking {
 
-enum NumberHelper {
-    static func factoryFor(type : NumberType) -> NumberFactory {
-        switch type {
-        case .NextStep:
-            return NextStepNumber.make
-        case .Swift:
-            return SwiftNumber.make
+    case bigKahuna
+    case jackInTheBox
+
+    func make() -> BurgerDescribing {
+        switch self {
+        case .bigKahuna:
+            return BigKahunaBurger().make()
+        case .jackInTheBox:
+            return JackInTheBox().make()
         }
     }
 }
@@ -793,14 +803,8 @@ enum NumberHelper {
 ### Usage
 
 ```swift
-
-let factoryOne = NumberHelper.factoryFor(.NextStep)
-let numberOne = factoryOne("1")
-numberOne.stringValue()
-
-let factoryTwo = NumberHelper.factoryFor(.Swift)
-let numberTwo = factoryTwo("2")
-numberTwo.stringValue()
+let bigKahuna = BurgerFactoryType.bigKahuna.make()
+let jackInTheBox = BurgerFactoryType.jackInTheBox.make()
 ```
 
 👷 Builder
@@ -812,8 +816,7 @@ An external class controls the construction algorithm.
 ### Example
 
 ```swift
-
-class DeathStarBuilder {
+final class DeathStarBuilder {
 
     var x: Double?
     var y: Double?
@@ -834,7 +837,7 @@ struct DeathStar : CustomStringConvertible {
 
     init?(builder: DeathStarBuilder) {
 
-        if let x = builder.x, y = builder.y, z = builder.z {
+        if let x = builder.x, let y = builder.y, let z = builder.z {
             self.x = x
             self.y = y
             self.z = z
@@ -852,7 +855,6 @@ struct DeathStar : CustomStringConvertible {
 ### Usage
 
 ```swift
-
 let empire = DeathStarBuilder { builder in
     builder.x = 0.1
     builder.y = 0.2
@@ -862,9 +864,6 @@ let empire = DeathStarBuilder { builder in
 let deathStar = DeathStar(builder:empire)
 ```
 
->**Further Examples:** [Design Patterns in Swift](https://github.com/kingreza/Swift-Builder)
-
-
 🏭 Factory Method
 -----------------
 
@@ -873,43 +872,45 @@ The factory pattern is used to replace class constructors, abstracting the proce
 ### Example
 
 ```swift
-
-protocol Currency {
-    func symbol() -> String
-    func code() -> String
+protocol CurrencyDescribing {
+    var symbol: String { get }
+    var code: String { get }
 }
 
-class Euro : Currency {
-    func symbol() -> String {
+final class Euro: CurrencyDescribing {
+    var symbol: String {
         return "€"
     }
     
-    func code() -> String {
+    var code: String {
         return "EUR"
     }
 }
 
-class UnitedStatesDolar : Currency {
-    func symbol() -> String {
+final class UnitedStatesDolar: CurrencyDescribing {
+    var symbol: String {
         return "$"
     }
     
-    func code() -> String {
+    var code: String {
         return "USD"
     }
 }
 
 enum Country {
-    case UnitedStates, Spain, UK, Greece
+    case unitedStates
+    case spain
+    case uk
+    case greece
 }
 
 enum CurrencyFactory {
-    static func currencyForCountry(country:Country) -> Currency? {
+    static func currency(for country: Country) -> CurrencyDescribing? {
 
         switch country {
-            case .Spain, .Greece :
+            case .spain, .greece:
                 return Euro()
-            case .UnitedStates :
+            case .unitedStates:
                 return UnitedStatesDolar()
             default:
                 return nil
@@ -922,13 +923,12 @@ enum CurrencyFactory {
 ### Usage
 
 ```swift
-
 let noCurrencyCode = "No Currency Code Available"
 
-CurrencyFactory.currencyForCountry(.Greece)?.code() ?? noCurrencyCode
-CurrencyFactory.currencyForCountry(.Spain)?.code() ?? noCurrencyCode
-CurrencyFactory.currencyForCountry(.UnitedStates)?.code() ?? noCurrencyCode
-CurrencyFactory.currencyForCountry(.UK)?.code() ?? noCurrencyCode
+CurrencyFactory.currency(for: .greece)?.code ?? noCurrencyCode
+CurrencyFactory.currency(for: .spain)?.code ?? noCurrencyCode
+CurrencyFactory.currency(for: .unitedStates)?.code ?? noCurrencyCode
+CurrencyFactory.currency(for: .uk)?.code ?? noCurrencyCode
 ```
 
 🃏 Prototype
@@ -940,17 +940,17 @@ This practise is particularly useful when the construction of a new object is in
 ### Example
 
 ```swift
+struct MoonWorker {
 
-class ChungasRevengeDisplay {
-    var name: String?
-    let font: String
+    let name: String
+    var health: Int = 100
 
-    init(font: String) {
-        self.font = font
+    init(name: String) {
+        self.name = name
     }
 
-    func clone() -> ChungasRevengeDisplay {
-        return ChungasRevengeDisplay(font:self.font)
+    func clone() -> MoonWorker {
+        return MoonWorker(name: name)
     }
 }
 ```
@@ -958,21 +958,17 @@ class ChungasRevengeDisplay {
 ### Usage
 
 ```swift
+let prototype = MoonWorker(name: "Sam Bell")
 
-let Prototype = ChungasRevengeDisplay(font:"GotanProject")
+var bell1 = prototype.clone()
+bell1.health = 12
 
-let Philippe = Prototype.clone()
-Philippe.name = "Philippe"
+var bell2 = prototype.clone()
+bell2.health = 23
 
-let Christoph = Prototype.clone()
-Christoph.name = "Christoph"
-
-let Eduardo = Prototype.clone()
-Eduardo.name = "Eduardo"
+var bell3 = prototype.clone()
+bell3.health = 0
 ```
-
->**Further Examples:** [Design Patterns in Swift](https://github.com/kingreza/Swift-Prototype)
-
 
 💍 Singleton
 ------------
@@ -984,9 +980,9 @@ There are very few applications, do not overuse this pattern!
 ### Example:
 
 ```swift
+final class ElonMusk {
 
-class DeathStarSuperlaser {
-    static let sharedInstance = DeathStarSuperlaser()
+    static let shared = ElonMusk()
 
     private init() {
         // Private initialization to ensure just one instance is created.
@@ -997,10 +993,9 @@ class DeathStarSuperlaser {
 ### Usage:
 
 ```swift
-
-let laser = DeathStarSuperlaser.sharedInstance
-
+let elon = ElonMusk.shared // There is only one Elon Musk folks.
 ```
+
 
 Structural
 ==========
@@ -1009,11 +1004,8 @@ Structural
 >
 >**Source:** [wikipedia.org](http://en.wikipedia.org/wiki/Structural_pattern)
 
-```swift
 
-import Swift
-import Foundation
-```
+
 
 🔌 Adapter
 ----------
@@ -1023,22 +1015,20 @@ The adapter pattern is used to provide a link between two otherwise incompatible
 ### Example
 
 ```swift
-
-protocol OlderDeathStarSuperLaserAiming {
-    var angleV: NSNumber {get}
-    var angleH: NSNumber {get}
+protocol NewDeathStarSuperLaserAiming {
+    var angleV: Double { get }
+    var angleH: Double { get }
 }
 ```
 
 **Adaptee**
 
 ```swift
+struct OldDeathStarSuperlaserTarget {
+    let angleHorizontal: Float
+    let angleVertical: Float
 
-struct DeathStarSuperlaserTarget {
-    let angleHorizontal: Double
-    let angleVertical: Double
-
-    init(angleHorizontal:Double, angleVertical:Double) {
+    init(angleHorizontal: Float, angleVertical: Float) {
         self.angleHorizontal = angleHorizontal
         self.angleVertical = angleVertical
     }
@@ -1048,19 +1038,19 @@ struct DeathStarSuperlaserTarget {
 **Adapter**
 
 ```swift
+struct NewDeathStarSuperlaserTarget: NewDeathStarSuperLaserAiming {
 
-struct OldDeathStarSuperlaserTarget : OlderDeathStarSuperLaserAiming {
-    private let target : DeathStarSuperlaserTarget
+    private let target: OldDeathStarSuperlaserTarget
 
-    var angleV:NSNumber {
-        return NSNumber(double: target.angleVertical)
+    var angleV: Double {
+        return Double(target.angleVertical)
     }
 
-    var angleH:NSNumber {
-        return NSNumber(double: target.angleHorizontal)
+    var angleH: Double {
+        return Double(target.angleHorizontal)
     }
 
-    init(_ target:DeathStarSuperlaserTarget) {
+    init(_ target: OldDeathStarSuperlaserTarget) {
         self.target = target
     }
 }
@@ -1069,16 +1059,12 @@ struct OldDeathStarSuperlaserTarget : OlderDeathStarSuperLaserAiming {
 ### Usage
 
 ```swift
+let target = OldDeathStarSuperlaserTarget(angleHorizontal: 14.0, angleVertical: 12.0)
+let newFormat = NewDeathStarSuperlaserTarget(target)
 
-let target = DeathStarSuperlaserTarget(angleHorizontal: 14.0, angleVertical: 12.0)
-let oldFormat = OldDeathStarSuperlaserTarget(target)
-
-oldFormat.angleH
-oldFormat.angleV
+newFormat.angleH
+newFormat.angleV
 ```
-
->**Further Examples:** [Design Patterns in Swift](https://github.com/kingreza/Swift-Adapter)
-
 
 🌉 Bridge
 ----------
@@ -1088,9 +1074,8 @@ The bridge pattern is used to separate the abstract elements of a class from the
 ### Example
 
 ```swift
-
 protocol Switch {
-    var appliance: Appliance {get set}
+    var appliance: Appliance { get set }
     func turnOn()
 }
 
@@ -1098,7 +1083,7 @@ protocol Appliance {
     func run()
 }
 
-class RemoteControl: Switch {
+final class RemoteControl: Switch {
     var appliance: Appliance
 
     func turnOn() {
@@ -1110,13 +1095,13 @@ class RemoteControl: Switch {
     }
 }
 
-class TV: Appliance {
+final class TV: Appliance {
     func run() {
         print("tv turned on");
     }
 }
 
-class VacuumCleaner: Appliance {
+final class VacuumCleaner: Appliance {
     func run() {
         print("vacuum cleaner turned on")
     }
@@ -1126,11 +1111,10 @@ class VacuumCleaner: Appliance {
 ### Usage
 
 ```swift
-
-var tvRemoteControl = RemoteControl(appliance: TV())
+let tvRemoteControl = RemoteControl(appliance: TV())
 tvRemoteControl.turnOn()
 
-var fancyVacuumCleanerRemoteControl = RemoteControl(appliance: VacuumCleaner())
+let fancyVacuumCleanerRemoteControl = RemoteControl(appliance: VacuumCleaner())
 fancyVacuumCleanerRemoteControl.turnOn()
 ```
 
@@ -1141,27 +1125,24 @@ The composite pattern is used to create hierarchical, recursive tree structures 
 
 ### Example
 
-
 Component
 
 ```swift
-
 protocol Shape {
     func draw(fillColor: String)
 }
 ```
- 
+
 Leafs
 
 ```swift
- 
-class Square : Shape {
+final class Square: Shape {
     func draw(fillColor: String) {
         print("Drawing a Square with color \(fillColor)")
     }
 }
 
-class Circle : Shape {
+final class Circle: Shape {
     func draw(fillColor: String) {
         print("Drawing a circle with color \(fillColor)")
     }
@@ -1172,17 +1153,17 @@ class Circle : Shape {
 Composite
 
 ```swift
+final class Whiteboard: Shape {
 
-class Whiteboard : Shape {
-    lazy var shapes = [Shape]()
-    
-    init(_ shapes:Shape...) {
+    private lazy var shapes = [Shape]()
+
+    init(_ shapes: Shape...) {
         self.shapes = shapes
     }
-    
-    func draw(fillColor:String) {
+
+    func draw(fillColor: String) {
         for shape in self.shapes {
-            shape.draw(fillColor)
+            shape.draw(fillColor: fillColor)
         }
     }
 }
@@ -1191,9 +1172,8 @@ class Whiteboard : Shape {
 ### Usage:
 
 ```swift
-
 var whiteboard = Whiteboard(Circle(), Square())
-whiteboard.draw("Red")
+whiteboard.draw(fillColor: "Red")
 ```
 
 🍧 Decorator
@@ -1205,64 +1185,48 @@ This provides a flexible alternative to using inheritance to modify behaviour.
 ### Example
 
 ```swift
-
-protocol Coffee {
-    func getCost() -> Double
-    func getIngredients() -> String
+protocol CostHaving {
+    var cost: Double { get }
 }
 
-class SimpleCoffee: Coffee {
-    func getCost() -> Double {
-        return 1.0
-    }
-
-    func getIngredients() -> String {
-        return "Coffee"
-    }
+protocol IngredientsHaving {
+    var ingredients: [String] { get }
 }
 
-class CoffeeDecorator: Coffee {
-    private let decoratedCoffee: Coffee
-    private let ingredientSeparator: String = ", "
+typealias BeverageDataHaving = CostHaving & IngredientsHaving
 
-    required init(decoratedCoffee: Coffee) {
-        self.decoratedCoffee = decoratedCoffee
-    }
-
-    func getCost() -> Double {
-        return decoratedCoffee.getCost()
-    }
-
-    func getIngredients() -> String {
-        return decoratedCoffee.getIngredients()
-    }
+struct SimpleCoffee: BeverageDataHaving {
+    let cost: Double = 1.0
+    let ingredients = ["Water", "Coffee"]
 }
 
-class Milk: CoffeeDecorator {
-    required init(decoratedCoffee: Coffee) {
-        super.init(decoratedCoffee: decoratedCoffee)
+protocol BeverageHaving: BeverageDataHaving {
+    var beverage: BeverageDataHaving { get }
+}
+
+struct Milk: BeverageHaving {
+
+    let beverage: BeverageDataHaving
+
+    var cost: Double {
+        return beverage.cost + 0.5
     }
 
-    override func getCost() -> Double {
-        return super.getCost() + 0.5
-    }
-
-    override func getIngredients() -> String {
-        return super.getIngredients() + ingredientSeparator + "Milk"
+    var ingredients: [String] {
+        return beverage.ingredients + ["Milk"]
     }
 }
 
-class WhipCoffee: CoffeeDecorator {
-    required init(decoratedCoffee: Coffee) {
-        super.init(decoratedCoffee: decoratedCoffee)
+struct WhipCoffee: BeverageHaving {
+
+    let beverage: BeverageDataHaving
+
+    var cost: Double {
+        return beverage.cost + 0.5
     }
 
-    override func getCost() -> Double {
-        return super.getCost() + 0.7
-    }
-
-    override func getIngredients() -> String {
-        return super.getIngredients() + ingredientSeparator + "Whip"
+    var ingredients: [String] {
+        return beverage.ingredients + ["Whip"]
     }
 }
 ```
@@ -1270,13 +1234,12 @@ class WhipCoffee: CoffeeDecorator {
 ### Usage:
 
 ```swift
-
-var someCoffee: Coffee = SimpleCoffee()
-print("Cost : \(someCoffee.getCost()); Ingredients: \(someCoffee.getIngredients())")
-someCoffee = Milk(decoratedCoffee: someCoffee)
-print("Cost : \(someCoffee.getCost()); Ingredients: \(someCoffee.getIngredients())")
-someCoffee = WhipCoffee(decoratedCoffee: someCoffee)
-print("Cost : \(someCoffee.getCost()); Ingredients: \(someCoffee.getIngredients())")
+var someCoffee: BeverageDataHaving = SimpleCoffee()
+print("Cost: \(someCoffee.cost); Ingredients: \(someCoffee.ingredients)")
+someCoffee = Milk(beverage: someCoffee)
+print("Cost: \(someCoffee.cost); Ingredients: \(someCoffee.ingredients)")
+someCoffee = WhipCoffee(beverage: someCoffee)
+print("Cost: \(someCoffee.cost); Ingredients: \(someCoffee.ingredients)")
 ```
 
 🎁 Façade
@@ -1287,30 +1250,95 @@ The facade pattern is used to define a simplified interface to a more complex su
 ### Example
 
 ```swift
+final class Defaults {
 
-enum Eternal {
+    private let defaults: UserDefaults
 
-    static func setObject(value: AnyObject!, forKey defaultName: String!) {
-        let defaults:NSUserDefaults = NSUserDefaults.standardUserDefaults()
-        defaults.setObject(value, forKey:defaultName)
-        defaults.synchronize()
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
     }
 
-    static func objectForKey(defaultName: String!) -> AnyObject! {
-        let defaults:NSUserDefaults = NSUserDefaults.standardUserDefaults()
+    subscript(key: String) -> String? {
+        get {
+            return defaults.string(forKey: key)
+        }
 
-        return defaults.objectForKey(defaultName)
+        set {
+            defaults.set(newValue, forKey: key)
+        }
     }
-
 }
 ```
 
 ### Usage
 
 ```swift
+let storage = Defaults()
 
-Eternal.setObject("Disconnect me. I’d rather be nothing", forKey:"Bishop")
-Eternal.objectForKey("Bishop")
+// Store
+storage["Bishop"] = "Disconnect me. I’d rather be nothing"
+
+// Read
+storage["Bishop"]
+```
+
+## 🍃 Flyweight
+The flyweight pattern is used to minimize memory usage or computational expenses by sharing as much as possible with other similar objects.
+### Example
+
+```swift
+// Instances of SpecialityCoffee will be the Flyweights
+struct SpecialityCoffee {
+    let origin: String
+}
+
+protocol CoffeeSearching {
+    func search(origin: String) -> SpecialityCoffee?
+}
+
+// Menu acts as a factory and cache for SpecialityCoffee flyweight objects
+final class Menu: CoffeeSearching {
+
+    private var coffeeAvailable: [String: SpecialityCoffee] = [:]
+
+    func search(origin: String) -> SpecialityCoffee? {
+        if coffeeAvailable.index(forKey: origin) == nil {
+            coffeeAvailable[origin] = SpecialityCoffee(origin: origin)
+        }
+
+        return coffeeAvailable[origin]
+    }
+}
+
+final class CoffeeShop {
+    private var orders: [Int: SpecialityCoffee] = [:]
+    private let menu: CoffeeSearching
+
+    init(menu: CoffeeSearching) {
+        self.menu = menu
+    }
+
+    func takeOrder(origin: String, table: Int) {
+        orders[table] = menu.search(origin: origin)
+    }
+
+    func serve() {
+        for (table, origin) in orders {
+            print("Serving \(origin) to table \(table)")
+        }
+    }
+}
+```
+
+### Usage
+
+```swift
+let coffeeShop = CoffeeShop(menu: Menu())
+
+coffeeShop.takeOrder(origin: "Yirgacheffe, Ethiopia", table: 1)
+coffeeShop.takeOrder(origin: "Buziraguhindwa, Burundi", table: 3)
+
+coffeeShop.serve()
 ```
 
 ☔ Protection Proxy
@@ -1322,24 +1350,23 @@ Protection proxy is restricting access.
 ### Example
 
 ```swift
-
-protocol DoorOperator {
-    func openDoors(doors: String) -> String
+protocol DoorOpening {
+    func open(doors: String) -> String
 }
 
-class HAL9000 : DoorOperator {
-    func openDoors(doors: String) -> String {
+final class HAL9000: DoorOpening {
+    func open(doors: String) -> String {
         return ("HAL9000: Affirmative, Dave. I read you. Opened \(doors).")
     }
 }
 
-class CurrentComputer : DoorOperator {
+final class CurrentComputer: DoorOpening {
     private var computer: HAL9000!
 
-    func authenticateWithPassword(pass: String) -> Bool {
+    func authenticate(password: String) -> Bool {
 
-        guard pass == "pass" else {
-            return false;
+        guard password == "pass" else {
+            return false
         }
 
         computer = HAL9000()
@@ -1347,13 +1374,13 @@ class CurrentComputer : DoorOperator {
         return true
     }
 
-    func openDoors(doors: String) -> String {
+    func open(doors: String) -> String {
 
         guard computer != nil else {
             return "Access Denied. I'm afraid I can't do that."
         }
 
-        return computer.openDoors(doors)
+        return computer.open(doors: doors)
     }
 }
 ```
@@ -1361,37 +1388,36 @@ class CurrentComputer : DoorOperator {
 ### Usage
 
 ```swift
-
 let computer = CurrentComputer()
-let doors = "Pod Bay Doors"
+let podBay = "Pod Bay Doors"
 
-computer.openDoors(doors)
+computer.open(doors: podBay)
 
-computer.authenticateWithPassword("pass")
-computer.openDoors(doors)
+computer.authenticate(password: "pass")
+computer.open(doors: podBay)
 ```
 
 🍬 Virtual Proxy
 ----------------
 
-The proxy pattern is used to provide a surrogate or placeholder object, which references an underlying object. 
+The proxy pattern is used to provide a surrogate or placeholder object, which references an underlying object.
 Virtual proxy is used for loading object on demand.
 
 ### Example
 
 ```swift
-
 protocol HEVSuitMedicalAid {
     func administerMorphine() -> String
 }
 
-class HEVSuit : HEVSuitMedicalAid {
+final class HEVSuit: HEVSuitMedicalAid {
     func administerMorphine() -> String {
-        return "Morphine aministered."
+        return "Morphine administered."
     }
 }
 
-class HEVSuitHumanInterface : HEVSuitMedicalAid {
+final class HEVSuitHumanInterface: HEVSuitMedicalAid {
+
     lazy private var physicalSuit: HEVSuit = HEVSuit()
 
     func administerMorphine() -> String {
@@ -1403,7 +1429,6 @@ class HEVSuitHumanInterface : HEVSuitMedicalAid {
 ### Usage
 
 ```swift
-
 let humanInterface = HEVSuitHumanInterface()
 humanInterface.administerMorphine()
 ```
@@ -1413,8 +1438,3 @@ Info
 ====
 
 📖 Descriptions from: [Gang of Four Design Patterns Reference Sheet](http://www.blackwasp.co.uk/GangOfFour.aspx)
-
-🚀 How to generate playground (+zip) from source: [GENERATE.md](https://github.com/ochococo/Design-Patterns-In-Swift/blob/master/GENERATE.md)
-
-
-```swift

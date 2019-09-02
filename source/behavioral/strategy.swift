@@ -6,42 +6,53 @@ The strategy pattern is used to create an interchangeable family of algorithms f
 
 ### Example
 */
-protocol PrintStrategy {
-    func printString(string: String) -> String
+
+struct TestSubject {
+    let pupilDiameter: Double
+    let blushResponse: Double
+    let isOrganic: Bool
 }
 
-class Printer {
-
-    let strategy: PrintStrategy
-    
-    func printString(string: String) -> String {
-        return self.strategy.printString(string)
-    }
-    
-    init(strategy: PrintStrategy) {
-        self.strategy = strategy
-    }
+protocol RealnessTesting: AnyObject {
+    func testRealness(_ testSubject: TestSubject) -> Bool
 }
 
-class UpperCaseStrategy : PrintStrategy {
-    func printString(string:String) -> String {
-        return string.uppercaseString
+final class VoightKampffTest: RealnessTesting {
+    func testRealness(_ testSubject: TestSubject) -> Bool {
+        return testSubject.pupilDiameter < 30.0 || testSubject.blushResponse == 0.0
     }
 }
 
-class LowerCaseStrategy : PrintStrategy {
-    func printString(string:String) -> String {
-        return string.lowercaseString
+final class GeneticTest: RealnessTesting {
+    func testRealness(_ testSubject: TestSubject) -> Bool {
+        return testSubject.isOrganic
     }
 }
+
+final class BladeRunner {
+    private let strategy: RealnessTesting
+
+    init(test: RealnessTesting) {
+        self.strategy = test
+    }
+
+    func testIfAndroid(_ testSubject: TestSubject) -> Bool {
+        return !strategy.testRealness(testSubject)
+    }
+}
+
 /*:
-### Usage
-*/
-var lower = Printer(strategy:LowerCaseStrategy())
-lower.printString("O tempora, o mores!")
+ ### Usage
+ */
 
-var upper = Printer(strategy:UpperCaseStrategy())
-upper.printString("O tempora, o mores!")
-/*:
->**Further Examples:** [Design Patterns in Swift](https://github.com/kingreza/Swift-Strategy)
-*/
+let rachel = TestSubject(pupilDiameter: 30.2,
+                         blushResponse: 0.3,
+                         isOrganic: false)
+
+// Deckard is using a traditional test
+let deckard = BladeRunner(test: VoightKampffTest())
+let isRachelAndroid = deckard.testIfAndroid(rachel)
+
+// Gaff is using a very precise method
+let gaff = BladeRunner(test: GeneticTest())
+let isDeckardAndroid = gaff.testIfAndroid(rachel)
